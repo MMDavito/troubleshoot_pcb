@@ -10,17 +10,19 @@
   ////Pin connected to DS of TPIC6C595
   int dataPin = 10;
 */
-#define OUTPUT_ENABLE 4
-#define LATCH_DRAIN 14
-#define LATCH_TRANS 15
-#define LATCH_INPUT 13
 
-#define CLOCK 12
-#define DATA_OUT 6
-#define DATA_IN 11
+#define OUTPUT_ENABLE 2 //4
+#define LATCH_DRAIN 8 //14
+#define LATCH_TRANS 9 //15
+#define LATCH_INPUT 7 // 13
+
+#define CLOCK 6 //12
+#define DATA_OUT 4 // 6
+#define DATA_IN 5 // 11
 
 //STANDARD 74HC595:
-byte dataToTransfer = 0b00001111;//== Qa on MSBFIRST, Qh on LSBFIRST
+byte dataToTransfer = 0b100000001;//== Qa on MSBFIRST, Qh on LSBFIRST
+byte oldData = dataToTransfer;
 //byte dataToTransfer = 0b11111111;//== Qa on MSBFIRST, Qh on LSBFIRST
 //byte dataToTransfer = 0xFF;//== Qa on MSBFIRST, Qh on LSBFIRST
 
@@ -61,17 +63,6 @@ bool isHexDigit(char c) {
   return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
 }
 
-byte nibble2c(char c)
-{
-  if ((c >= '0') && (c <= '9'))
-    return c - '0' ;
-  if ((c >= 'A') && (c <= 'F'))
-    return c + 10 - 'A' ;
-  if ((c >= 'a') && (c <= 'f')) // (c<='f') NOT (c<='a')
-    return c + 10 - 'a' ;
-  return -1 ;
-}
-
 void readSerial() {
 
   byte b = 0;
@@ -92,21 +83,16 @@ void readSerial() {
 
   // Copy the string to the character array (including null terminator)
   temp.toCharArray(charArray, sizeof(charArray));
-  
-  String bajs = "";
-  bajs += charArray[0] + charArray[1];
-  Serial.println(bajs);
-  
+
   Serial.print("C magic: (god bless gemini and google): ");
-  Serial.println(hexCharToByte(charArray[0], charArray[1]));
+  byte hexRep = hexCharToByte(charArray[0], charArray[1]);
+  Serial.println(hexRep);
+  dataToTransfer = hexRep;
 }
 
 
 void setup() {
   Serial.begin(9600);
-  Serial.print("NIBBLE: ");
-  Serial.println(nibble2c('FE'));
-
 
   pinMode(OUTPUT_ENABLE, OUTPUT);
   pinMode(LATCH_DRAIN, OUTPUT);
@@ -118,30 +104,45 @@ void setup() {
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
   digitalWrite(LATCH_INPUT, HIGH);
-
-
-  //ground latchPin and hold low for as long as you are transmitting
-
 }
 
 void loop() {
-  digitalWrite(LATCH_DRAIN, LOW);
+  //ground latchPin and hold low for as long as you are transmitting
+  if (dataToTransfer != oldData)
+  {
+    Serial.print("Old data:");
+    Serial.println(oldData);
 
+    Serial.print("New data:");
+    Serial.println(dataToTransfer);
+    oldData = dataToTransfer;
+  }
+  digitalWrite(LATCH_DRAIN, LOW);
+  /*
+  digitalWrite(DATA_OUT, HIGH);
+  digitalWrite(CLOCK, HIGH);
+  */
+  //delay(10);
+  shiftOut(0xFF, CLOCK, LSBFIRST, dataToTransfer);
+  //digitalWrite(LATCH_DRAIN, HIGH);
+  /*
+  digitalWrite(DATA_OUT, HIGH);
+  digitalWrite(CLOCK, HIGH);
+  */
+  //delay(10);
+  //digitalWrite(LATCH_DRAIN, LOW);
+    
   shiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
 
   //return the latch pin high to signal chip that it
   //no longer needs to listen for information
+  
+  //delay(10);
   digitalWrite(LATCH_DRAIN, HIGH);
-  delay(1000);
-  /*
-    digitalWrite(OUTPUT_ENABLE, HIGH);
-    delay(1000);
-    digitalWrite(OUTPUT_ENABLE, LOW);
-    delay(500);
-    Serial.println(dataToTransfer);
-  */
+  
   if (Serial.available()) {
     Serial.println("Will read serial");
     readSerial();
   }
+  delay(5);
 }
