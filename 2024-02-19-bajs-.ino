@@ -20,8 +20,35 @@
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
 
+void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
+{
+      digitalWrite(clockPin, LOW);
+      //delay(1);//VERIFIED OK when using 1m ohm to ground
+      delayMicroseconds(50);
+      
+      //delayMicroseconds(100);
+      int i;
+
+      for (i = 0; i < 8; i++)  {
+            if (bitOrder == LSBFIRST)
+                  digitalWrite(dataPin, !!(val & (1 << i)));
+            else      
+                  digitalWrite(dataPin, !!(val & (1 << (7 - i))));
+                  
+            digitalWrite(clockPin, HIGH);
+            //delay(1);//ok Test 100 kOHM
+            delayMicroseconds(20);
+            
+            digitalWrite(clockPin, LOW);            
+            delayMicroseconds(50);
+            //delay(1);//VERIFIED OK when using oscilioscope as ground
+            //delayMicroseconds(100);
+      }
+}
+
+
 //STANDARD 74HC595:
-byte dataToTransfer = 0b100000001;//== Qa on MSBFIRST, Qh on LSBFIRST
+byte dataToTransfer = 0b00000011;//== Qa on MSBFIRST, Qh on LSBFIRST
 byte oldData = dataToTransfer;
 //byte dataToTransfer = 0b11111111;//== Qa on MSBFIRST, Qh on LSBFIRST
 //byte dataToTransfer = 0xFF;//== Qa on MSBFIRST, Qh on LSBFIRST
@@ -76,6 +103,7 @@ void readSerial() {
     temp += char(b);
     Serial.print("String: ");
     Serial.println(temp);
+    delay(1);
   }
 
 
@@ -117,32 +145,20 @@ void loop() {
     Serial.println(dataToTransfer);
     oldData = dataToTransfer;
   }
+  //digitalWrite(CLOCK,HIGH);
+  
   digitalWrite(LATCH_DRAIN, LOW);
-  /*
-  digitalWrite(DATA_OUT, HIGH);
-  digitalWrite(CLOCK, HIGH);
-  */
-  //delay(10);
-  shiftOut(0xFF, CLOCK, LSBFIRST, dataToTransfer);
-  //digitalWrite(LATCH_DRAIN, HIGH);
-  /*
-  digitalWrite(DATA_OUT, HIGH);
-  digitalWrite(CLOCK, HIGH);
-  */
-  //delay(10);
-  //digitalWrite(LATCH_DRAIN, LOW);
-    
-  shiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
-
+  customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
+  //delay(1);
   //return the latch pin high to signal chip that it
   //no longer needs to listen for information
   
-  //delay(10);
+  
   digitalWrite(LATCH_DRAIN, HIGH);
   
   if (Serial.available()) {
     Serial.println("Will read serial");
     readSerial();
   }
-  delay(5);
+  delay(10);
 }
