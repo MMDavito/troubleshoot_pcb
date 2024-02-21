@@ -140,7 +140,8 @@ void loop() {
 
     for (int i = 0; i < 6; i ++) {
       digitalWrite(LATCH_DRAIN, LOW);
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
 
       //Disable old output before shifting new display value:
       digitalWrite(OUTPUT_ENABLE, HIGH);
@@ -148,6 +149,7 @@ void loop() {
 
       digitalWrite(LATCH_TRANS, LOW);
       customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);
       
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
