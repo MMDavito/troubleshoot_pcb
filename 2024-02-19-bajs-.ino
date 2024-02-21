@@ -132,6 +132,7 @@ void setup() {
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
   digitalWrite(LATCH_INPUT, HIGH);
+  digitalWrite(CLOCK,LOW);
 }
 
 void loop() {
@@ -145,20 +146,25 @@ void loop() {
     Serial.println(dataToTransfer);
     oldData = dataToTransfer;
   }
-  //digitalWrite(CLOCK,HIGH);
   
-  digitalWrite(LATCH_DRAIN, LOW);
-  customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
+  
+  digitalWrite(CLOCK,HIGH);
+  //delayMicroseconds(1);
+  digitalWrite(CLOCK,LOW);
+  delayMicroseconds(30);
+  
+  //digitalWrite(LATCH_DRAIN, LOW);
+  //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
   //delay(1);
   //return the latch pin high to signal chip that it
   //no longer needs to listen for information
   
   
-  digitalWrite(LATCH_DRAIN, HIGH);
+  //digitalWrite(LATCH_DRAIN, HIGH);
   
   if (Serial.available()) {
     Serial.println("Will read serial");
     readSerial();
   }
-  delay(10);
+  //delay(10);
 }
