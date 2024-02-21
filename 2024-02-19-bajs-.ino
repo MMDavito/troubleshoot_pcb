@@ -19,6 +19,14 @@
 #define CLOCK 6 //12
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
+volatile byte addressHex0 = 0b00010000; //LSB first
+volatile byte addressLeds = 0b00000100; //LSB first
+
+//STANDARD 74HC595:
+//byte dataToTransfer = 0b00000001;//== Qa on MSBFIRST, Qh on LSBFIRST
+volatile byte dataToTransfer = 0b00000000;
+volatile byte oldData = dataToTransfer;
+volatile bool printLeds = true;
 
 
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
@@ -27,7 +35,7 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
   //delay(1);//VERIFIED OK when using 1m ohm to ground
   //delayMicroseconds(50);
 
-  delayMicroseconds(2);
+  //delayMicroseconds(20);
   int i;
 
   for (i = 0; i < 8; i++)  {
@@ -35,29 +43,20 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
       digitalWrite(dataPin, !!(val & (1 << i)));
     else
       digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-
+    //delayMicroseconds(50);
     digitalWrite(clockPin, HIGH);
     //delay(1);//ok Test 100 kOHM
-    delayMicroseconds(1);//ok Test 100 kOHM
+    //delayMicroseconds(5);////verified ok without scope 100k trans
+    delayMicroseconds(1);////verified ok without scope 100k trans
 
     digitalWrite(clockPin, LOW);
+    digitalWrite(dataPin, LOW);
     //delayMicroseconds(50);
     //delay(1);//VERIFIED OK when using oscilioscope as ground
-    delayMicroseconds(1); //VERIFIED OK WITH SCOPE attatched 100k.
+    delayMicroseconds(30); //verified ok without scope 100k trans
+    //delayMicroseconds(1);
   }
 }
-
-
-//STANDARD 74HC595:
-byte dataToTransfer = 0b00000011;//== Qa on MSBFIRST, Qh on LSBFIRST
-byte oldData = dataToTransfer;
-//byte dataToTransfer = 0b11111111;//== Qa on MSBFIRST, Qh on LSBFIRST
-//byte dataToTransfer = 0xFF;//== Qa on MSBFIRST, Qh on LSBFIRST
-
-//POWER HC/TPIC6C595:
-
-//byte dataToTransfer = 0b11111111;
-//byte dataToTransfer = 0b00000001;//== drain0 on MSBFIRST, drain7 on LSBFIRST
 
 byte hexCharToByte(char hexChar1, char hexChar2) {
   // Check for valid characters
@@ -133,7 +132,13 @@ void setup() {
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
   digitalWrite(LATCH_INPUT, HIGH);
-  digitalWrite(CLOCK, LOW);
+
+  digitalWrite(CLOCK, HIGH);
+
+
+  digitalWrite(LATCH_DRAIN, LOW);
+  customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
+  digitalWrite(LATCH_DRAIN, HIGH);
 }
 
 void loop() {
@@ -158,10 +163,13 @@ void loop() {
       }
 
     */
+    /*
+        digitalWrite(LATCH_DRAIN, LOW);
+        customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
+        digitalWrite(LATCH_DRAIN, HIGH);
+    */
 
-    digitalWrite(LATCH_DRAIN, LOW);
-    customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
-    digitalWrite(LATCH_DRAIN, HIGH);
+
     //delay(1);
     //return the latch pin high to signal chip that it
     //no longer needs to listen for information
@@ -170,9 +178,35 @@ void loop() {
     //digitalWrite(LATCH_DRAIN, HIGH);
 
     if (Serial.available()) {
-      Serial.println("Will read serial");
+      Serial.println("Will now read serial");
       readSerial();
     }
-    delay(1);
+    //delayMicroseconds(10);
+    digitalWrite(LATCH_TRANS, LOW);
+    digitalWrite(OUTPUT_ENABLE, HIGH);
+    //delayMicroseconds(100);addressLeds
+    /*
+      Serial.print("PrintLeds: ");
+      Serial.println(printLeds);
+      delay(1);
+    */
+    if (printLeds)
+    {
+      //Serial.println("Priniting leds");
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, addressLeds);
+    }
+    else
+    {
+      //Serial.println("Printing HEX");
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, addressHex0);
+    }
+    printLeds = !printLeds;
+    digitalWrite(LATCH_TRANS, HIGH);
+    digitalWrite(OUTPUT_ENABLE, LOW);
+    digitalWrite(CLOCK, HIGH);
+    digitalWrite(DATA_OUT, HIGH);
+    delayMicroseconds(50);
+    //delay(5);
+
   }
 }
