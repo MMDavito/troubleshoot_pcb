@@ -22,28 +22,28 @@
 
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
-      digitalWrite(clockPin, LOW);
-      //delay(1);//VERIFIED OK when using 1m ohm to ground
-      delayMicroseconds(50);
-      
-      //delayMicroseconds(100);
-      int i;
+  digitalWrite(clockPin, LOW);
+  //delay(1);//VERIFIED OK when using 1m ohm to ground
+  //delayMicroseconds(50);
 
-      for (i = 0; i < 8; i++)  {
-            if (bitOrder == LSBFIRST)
-                  digitalWrite(dataPin, !!(val & (1 << i)));
-            else      
-                  digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-                  
-            digitalWrite(clockPin, HIGH);
-            //delay(1);//ok Test 100 kOHM
-            delayMicroseconds(20);
-            
-            digitalWrite(clockPin, LOW);            
-            delayMicroseconds(50);
-            //delay(1);//VERIFIED OK when using oscilioscope as ground
-            //delayMicroseconds(100);
-      }
+  delayMicroseconds(20);
+  int i;
+
+  for (i = 0; i < 8; i++)  {
+    if (bitOrder == LSBFIRST)
+      digitalWrite(dataPin, !!(val & (1 << i)));
+    else
+      digitalWrite(dataPin, !!(val & (1 << (7 - i))));
+
+    digitalWrite(clockPin, HIGH);
+    //delay(1);//ok Test 100 kOHM
+    delayMicroseconds(1);
+
+    digitalWrite(clockPin, LOW);
+    //delayMicroseconds(50);
+    //delay(1);//VERIFIED OK when using oscilioscope as ground
+    delayMicroseconds(10);
+  }
 }
 
 
@@ -132,39 +132,46 @@ void setup() {
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
   digitalWrite(LATCH_INPUT, HIGH);
-  digitalWrite(CLOCK,LOW);
+  digitalWrite(CLOCK, LOW);
 }
 
 void loop() {
-  //ground latchPin and hold low for as long as you are transmitting
-  if (dataToTransfer != oldData)
-  {
-    Serial.print("Old data:");
-    Serial.println(oldData);
+  while (1) {
+    //ground latchPin and hold low for as long as you are transmitting
+    if (dataToTransfer != oldData)
+    {
+      Serial.print("Old data:");
+      Serial.println(oldData);
 
-    Serial.print("New data:");
-    Serial.println(dataToTransfer);
-    oldData = dataToTransfer;
+      Serial.print("New data:");
+      Serial.println(dataToTransfer);
+      oldData = dataToTransfer;
+    }
+    /*
+    while (1)
+    {
+
+      digitalWrite(CLOCK, HIGH);
+      //delayMicroseconds(10);
+      digitalWrite(CLOCK, LOW);
+    }
+
+    */
+
+    digitalWrite(LATCH_DRAIN, LOW);
+    customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
+    digitalWrite(LATCH_DRAIN, HIGH);
+    //delay(1);
+    //return the latch pin high to signal chip that it
+    //no longer needs to listen for information
+
+
+    //digitalWrite(LATCH_DRAIN, HIGH);
+
+    if (Serial.available()) {
+      Serial.println("Will read serial");
+      readSerial();
+    }
+    //delay(1);
   }
-  
-  
-  digitalWrite(CLOCK,HIGH);
-  //delayMicroseconds(1);
-  digitalWrite(CLOCK,LOW);
-  delayMicroseconds(30);
-  
-  //digitalWrite(LATCH_DRAIN, LOW);
-  //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
-  //delay(1);
-  //return the latch pin high to signal chip that it
-  //no longer needs to listen for information
-  
-  
-  //digitalWrite(LATCH_DRAIN, HIGH);
-  
-  if (Serial.available()) {
-    Serial.println("Will read serial");
-    readSerial();
-  }
-  //delay(10);
 }
