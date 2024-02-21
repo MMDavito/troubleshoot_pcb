@@ -19,23 +19,23 @@
 #define CLOCK 6 //12
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
-volatile byte addressHex0 = 0b00010000; //LSB first
-volatile byte addressLeds = 0b00000100; //LSB first
 
-//STANDARD 74HC595:
-//byte dataToTransfer = 0b00000001;//== Qa on MSBFIRST, Qh on LSBFIRST
-volatile byte dataToTransfer = 0b00000000;
-volatile byte oldData = dataToTransfer;
-volatile bool printLeds = true;
+volatile byte counter = 0;
+const byte outputs[6]  =
+{
+  0b10000000,
+  0b01000000,
+  0b00100000,
+  0b00010000,
+  0b00001000,
+  0b00000100,
+};
+
 
 
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
   digitalWrite(clockPin, LOW);
-  //delay(1);//VERIFIED OK when using 1m ohm to ground
-  //delayMicroseconds(50);
-
-  //delayMicroseconds(20);
   int i;
 
   for (i = 0; i < 8; i++)  {
@@ -43,17 +43,10 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
       digitalWrite(dataPin, !!(val & (1 << i)));
     else
       digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-    //delayMicroseconds(50);
     digitalWrite(clockPin, HIGH);
-    //delay(1);//ok Test 100 kOHM
-    //delayMicroseconds(5);////verified ok without scope 100k trans
-    //delayMicroseconds(1);////verified ok without scope 100k trans
 
     digitalWrite(clockPin, LOW);
     digitalWrite(dataPin, LOW);
-    //delayMicroseconds(50);
-    //delay(1);//VERIFIED OK when using oscilioscope as ground
-    //delayMicroseconds(30); //verified ok without scope 100k trans
     delayMicroseconds(1);
   }
 }
@@ -115,7 +108,6 @@ void readSerial() {
   Serial.print("C magic: (god bless gemini and google): ");
   byte hexRep = hexCharToByte(charArray[0], charArray[1]);
   Serial.println(hexRep);
-  dataToTransfer = hexRep;
 }
 
 
@@ -134,79 +126,36 @@ void setup() {
   digitalWrite(LATCH_INPUT, HIGH);
 
   digitalWrite(CLOCK, HIGH);
-
-
-  digitalWrite(LATCH_DRAIN, LOW);
-  customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
-  digitalWrite(LATCH_DRAIN, HIGH);
 }
 
 void loop() {
-  while (1) {
+  if (counter == 250)
+    counter = 0;
+  else
+    counter += 1;
+  long start = millis();
+
+  while (millis() - start < 250) {
     //ground latchPin and hold low for as long as you are transmitting
-    if (dataToTransfer != oldData)
-    {
-      Serial.print("Old data:");
-      Serial.println(oldData);
 
-      Serial.print("New data:");
-      Serial.println(dataToTransfer);
-      oldData = dataToTransfer;
-    }
-    /*
-      while (1)
-      {
+    for (int i = 0; i < 6; i ++) {
+      digitalWrite(LATCH_DRAIN, LOW);
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
 
+      //Disable old output before shifting new display value:
+      digitalWrite(OUTPUT_ENABLE, HIGH);
+      digitalWrite(LATCH_DRAIN, HIGH);
+
+      digitalWrite(LATCH_TRANS, LOW);
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);
+      
+      //Shift the address and enable the output.
+      digitalWrite(LATCH_TRANS, HIGH);
+      digitalWrite(OUTPUT_ENABLE, LOW);
       digitalWrite(CLOCK, HIGH);
-      //delayMicroseconds(10);
-      digitalWrite(CLOCK, LOW);
-      }
-
-    */
-    /*
-        digitalWrite(LATCH_DRAIN, LOW);
-        customShiftOut(DATA_OUT, CLOCK, LSBFIRST, dataToTransfer);
-        digitalWrite(LATCH_DRAIN, HIGH);
-    */
-
-
-    //delay(1);
-    //return the latch pin high to signal chip that it
-    //no longer needs to listen for information
-
-
-    //digitalWrite(LATCH_DRAIN, HIGH);
-
-    if (Serial.available()) {
-      Serial.println("Will now read serial");
-      readSerial();
+      digitalWrite(DATA_OUT, HIGH);
+      delayMicroseconds(5);
+      //delay(5);
     }
-    //delayMicroseconds(10);
-    digitalWrite(LATCH_TRANS, LOW);
-    digitalWrite(OUTPUT_ENABLE, HIGH);
-    //delayMicroseconds(100);addressLeds
-    /*
-      Serial.print("PrintLeds: ");
-      Serial.println(printLeds);
-      delay(1);
-    */
-    if (printLeds)
-    {
-      //Serial.println("Priniting leds");
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, addressLeds);
-    }
-    else
-    {
-      //Serial.println("Printing HEX");
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, addressHex0);
-    }
-    printLeds = !printLeds;
-    digitalWrite(LATCH_TRANS, HIGH);
-    digitalWrite(OUTPUT_ENABLE, LOW);
-    digitalWrite(CLOCK, HIGH);
-    digitalWrite(DATA_OUT, HIGH);
-    delayMicroseconds(500);
-    //delay(5);
-
   }
 }
