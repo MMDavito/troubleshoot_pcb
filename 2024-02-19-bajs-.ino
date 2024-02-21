@@ -20,13 +20,14 @@
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
 
+
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
   digitalWrite(clockPin, LOW);
   //delay(1);//VERIFIED OK when using 1m ohm to ground
   //delayMicroseconds(50);
 
-  delayMicroseconds(20);
+  delayMicroseconds(2);
   int i;
 
   for (i = 0; i < 8; i++)  {
@@ -37,12 +38,12 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
 
     digitalWrite(clockPin, HIGH);
     //delay(1);//ok Test 100 kOHM
-    delayMicroseconds(1);
+    delayMicroseconds(1);//ok Test 100 kOHM
 
     digitalWrite(clockPin, LOW);
     //delayMicroseconds(50);
     //delay(1);//VERIFIED OK when using oscilioscope as ground
-    delayMicroseconds(10);
+    delayMicroseconds(1); //VERIFIED OK WITH SCOPE attatched 100k.
   }
 }
 
@@ -148,13 +149,13 @@ void loop() {
       oldData = dataToTransfer;
     }
     /*
-    while (1)
-    {
+      while (1)
+      {
 
       digitalWrite(CLOCK, HIGH);
       //delayMicroseconds(10);
       digitalWrite(CLOCK, LOW);
-    }
+      }
 
     */
 
@@ -172,6 +173,6 @@ void loop() {
       Serial.println("Will read serial");
       readSerial();
     }
-    //delay(1);
+    delay(1);
   }
 }
