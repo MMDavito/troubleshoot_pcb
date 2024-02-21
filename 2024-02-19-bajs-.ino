@@ -47,14 +47,14 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
     digitalWrite(clockPin, HIGH);
     //delay(1);//ok Test 100 kOHM
     //delayMicroseconds(5);////verified ok without scope 100k trans
-    delayMicroseconds(1);////verified ok without scope 100k trans
+    //delayMicroseconds(1);////verified ok without scope 100k trans
 
     digitalWrite(clockPin, LOW);
     digitalWrite(dataPin, LOW);
     //delayMicroseconds(50);
     //delay(1);//VERIFIED OK when using oscilioscope as ground
-    delayMicroseconds(30); //verified ok without scope 100k trans
-    //delayMicroseconds(1);
+    //delayMicroseconds(30); //verified ok without scope 100k trans
+    delayMicroseconds(1);
   }
 }
 
@@ -205,7 +205,7 @@ void loop() {
     digitalWrite(OUTPUT_ENABLE, LOW);
     digitalWrite(CLOCK, HIGH);
     digitalWrite(DATA_OUT, HIGH);
-    delayMicroseconds(50);
+    delayMicroseconds(500);
     //delay(5);
 
   }
