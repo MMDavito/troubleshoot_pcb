@@ -1,16 +1,10 @@
-//Shift register tpic595 vs hc595
-//https://www.instructables.com/How-Shift-Registers-Work-74HC595/
+#include <ShiftDisplay2.h>
+/*If I put this to two, maybe I could actually scrap update of the OUTPUT_TRANS.
+  But would probably need to hotwire serial...
 
-/*
-  //Power/ TPIC6C595:
-  //Pin connected to ST_CP of TPIC6C595
-  int latchPin = 8;
-  //Pin connected to SH_CP of TPIC6C595
-  int clockPin = 9;
-  ////Pin connected to DS of TPIC6C595
-  int dataPin = 10;
+  In same moment I realize, no I would have needed 1 shift reg per output?
+  Afternoon 2024-02-22 David started becomeing delusional of overwork....
 */
-
 #define OUTPUT_ENABLE 2 //4
 #define LATCH_DRAIN 8 //14
 #define LATCH_TRANS 9 //15
@@ -20,6 +14,7 @@
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
 
+ShiftDisplay2 display(LATCH_DRAIN, DATA_OUT, DATA_OUT, COMMON_CATHODE, 1);
 volatile byte counter = 0;
 const byte outputs[6]  =
 {
@@ -30,6 +25,27 @@ const byte outputs[6]  =
   0b00001000,
   0b00000100,
 };
+volatile char outputChars[6];
+volatile byte outputValues[6];
+const byte customChars[] = {
+  B11111100, // 0
+  B01100000, // 1
+  B11011010, // 2
+  B11110010, // 3
+  B01100110, // 4
+  B10110110, // 5
+  B10111110, // 6
+  B11100000, // 7
+  B11111110, // 8
+  B11100110, // 9
+  B11101110, // a
+  B00111110, // b
+  B10011100, // c
+  B01111010, // d
+  B10011110, // e
+  B10001110  // f
+};
+
 
 
 
@@ -110,6 +126,51 @@ void readSerial() {
   Serial.println(hexRep);
 }
 
+byte charToByte(char ch) {
+  // Validate input character
+  if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F')) {
+    // Handle decimal or hexadecimal character
+    int value;
+    if (ch >= '0' && ch <= '9') {
+      value = ch - '0';
+    } else {
+      value = ch - 'A' + 10; // Convert hex char to numerical value (A-F: 10-15)
+    }
+    return value; // Shift left by 4 bits
+    //return value << 4; // Shift left by 4 bits
+  } else {
+    // Return 0 for invalid characters
+    return 0;
+  }
+}
+
+void setOutputValues(byte value) {
+  // Convert to decimal string manually
+  String strValue = String(value);
+  // Handle single-digit values
+  if (strValue.length() == 1)
+    strValue = "00" + strValue; // Prepend leading zeros
+  else if (strValue.length() == 2)
+    strValue = "0" + strValue; // Prepend leading zeros
+  strValue.toCharArray(outputChars, sizeof(outputChars)); // Copy to char array
+  for (int i = 0; i < 3; i++) {
+    outputValues[i] = customChars[charToByte(outputChars[i])];
+  }
+
+  // Convert to hexadecimal string manually
+  byte nibble;
+  for (int i = 0; i < 2; i++) {
+    nibble = (value >> (4 * i)) & 0x0F;
+    outputChars[4 - i] = (nibble < 10) ? '0' + nibble : 'A' + nibble - 10;
+    /*Serial.print("NIBBLE IS: ");
+      Serial.println(nibble);*/
+    outputValues[4 - i] = customChars[nibble];
+    //outputValues[4-i] = customChars[charToByte(outputChars[4 - i])];
+  }
+  outputChars[5] = char(value);
+  outputValues[5] = value;
+
+}
 
 void setup() {
   Serial.begin(9600);
@@ -123,41 +184,79 @@ void setup() {
   digitalWrite(OUTPUT_ENABLE, HIGH);
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
-  digitalWrite(LATCH_INPUT, HIGH);
+  digitalWrite(LATCH_INPUT, LOW);
 
   digitalWrite(CLOCK, HIGH);
 }
+/**
+   readFrom74HC165
+*/
+byte readFromInput() {
+  // Ensure clock is high before latching in information, to avoid interference.
+  digitalWrite(CLOCK, HIGH);
+  //QUICKLY SAMPLE TO AVOID ANNOYANCES:
+  // Set latch pin high to hold data
+  digitalWrite(LATCH_INPUT, LOW);
+  digitalWrite(LATCH_INPUT,HIGH);
+  // Shift in 8 bits (one byte)
+  byte data = 0;
+  for (int i = 0; i < 8; i++) {
+    // Read data bit
+    data |= digitalRead(DATA_IN) << i;
+    //digitalWrite(DATA_IN, LOW);
+    // Pulse clock pin LOW and HIGH to shift next bit
+    digitalWrite(CLOCK, LOW);
+    delayMicroseconds(15);
+    digitalWrite(CLOCK, HIGH);
+    
+  }
 
+  // Set latch pin low to release data
+  digitalWrite(LATCH_INPUT, HIGH);
+
+  return data;
+}
 void loop() {
-  if (counter == 250)
-    counter = 0;
-  else
-    counter += 1;
-  long start = millis();
+  while (true) {
+    //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
+    digitalWrite(OUTPUT_ENABLE, HIGH);
+    /*
+      if (counter == 250)
+      counter = 0;
+      else
+      counter += 1;
+      setOutputValues(counter);
+    */
 
-  while (millis() - start < 250) {
-    //ground latchPin and hold low for as long as you are transmitting
+    byte value = readFromInput();
+    setOutputValues(value);
 
-    for (int i = 0; i < 6; i ++) {
-      digitalWrite(LATCH_DRAIN, LOW);
-      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+    long start = millis();
+    while (millis() - start < 250) {
+      for (int i = 0; i < 6; i ++) {
+        digitalWrite(LATCH_DRAIN, LOW);
+        //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
+        //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
-      //Disable old output before shifting new display value:
-      digitalWrite(OUTPUT_ENABLE, HIGH);
-      digitalWrite(LATCH_DRAIN, HIGH);
+        customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+        //shiftOut(DATA_OUT, CLOCK, LSBFIRST, 0x00);
+        //Disable old output before shifting new display value:
+        digitalWrite(OUTPUT_ENABLE, HIGH);
+        digitalWrite(LATCH_DRAIN, HIGH);
 
-      digitalWrite(LATCH_TRANS, LOW);
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);
-      
-      //Shift the address and enable the output.
-      digitalWrite(LATCH_TRANS, HIGH);
-      digitalWrite(OUTPUT_ENABLE, LOW);
-      digitalWrite(CLOCK, HIGH);
-      digitalWrite(DATA_OUT, HIGH);
-      delayMicroseconds(5);
-      //delay(5);
+        // Select the correct display before re-enabling the display:
+        digitalWrite(LATCH_TRANS, LOW);
+        //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
+        shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+
+        //Shift the address and enable the output.
+        digitalWrite(LATCH_TRANS, HIGH);
+        digitalWrite(OUTPUT_ENABLE, LOW);
+        digitalWrite(CLOCK, HIGH);
+        digitalWrite(DATA_OUT, HIGH);
+        //delayMicroseconds(50);//Okay, sligtly flickery
+        delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
+      }
     }
   }
 }
