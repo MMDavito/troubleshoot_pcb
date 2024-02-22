@@ -206,7 +206,7 @@ byte readFromInput() {
     //digitalWrite(DATA_IN, LOW);
     // Pulse clock pin LOW and HIGH to shift next bit
     digitalWrite(CLOCK, LOW);
-    delayMicroseconds(15);
+    delayMicroseconds(1);
     digitalWrite(CLOCK, HIGH);
     
   }
