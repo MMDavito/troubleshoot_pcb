@@ -1,4 +1,3 @@
-#include <ShiftDisplay2.h>
 /*If I put this to two, maybe I could actually scrap update of the OUTPUT_TRANS.
   But would probably need to hotwire serial...
 
@@ -14,7 +13,7 @@
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
 
-ShiftDisplay2 display(LATCH_DRAIN, DATA_OUT, DATA_OUT, COMMON_CATHODE, 1);
+volatile long lastDebounceTime = 0;
 volatile byte counter = 0;
 const byte outputs[6]  =
 {
@@ -52,6 +51,7 @@ const byte customChars[] = {
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
   digitalWrite(clockPin, LOW);
+  delayMicroseconds(1);
   int i;
 
   for (i = 0; i < 8; i++)  {
@@ -189,74 +189,105 @@ void setup() {
   digitalWrite(CLOCK, HIGH);
 }
 /**
-   readFrom74HC165
+   readFrom74HC165WithDebounce
 */
-byte readFromInput() {
-  // Ensure clock is high before latching in information, to avoid interference.
-  digitalWrite(CLOCK, HIGH);
-  //QUICKLY SAMPLE TO AVOID ANNOYANCES:
-  // Set latch pin high to hold data
+const int debounceTime = 50; // Debounce delay in milliseconds
+byte readInput() {
   digitalWrite(LATCH_INPUT, LOW);
-  digitalWrite(LATCH_INPUT,HIGH);
+  delay(500);
+  
+  // Set latch pin high to hold data
+  digitalWrite(LATCH_INPUT, HIGH);
+
+  // Debounce latch pin
+  /*
+  lastDebounceTime = millis();
+  while (digitalRead(LATCH_INPUT) == LOW) {
+    if (millis() - lastDebounceTime > debounceTime) {
+      break;
+    }
+  }
+  */
+
+  // Set clock pin low to start shifting
+  
+
   // Shift in 8 bits (one byte)
   byte data = 0;
   for (int i = 0; i < 8; i++) {
-    // Read data bit
+    // Read data bit with debounce
+    lastDebounceTime = millis();
+    /*
+      while (digitalRead(DATA_IN) == LOW) {
+      if (millis() - lastDebounceTime > debounceTime) {
+        break;
+      }
+      }
+    */
     data |= digitalRead(DATA_IN) << i;
-    //digitalWrite(DATA_IN, LOW);
-    // Pulse clock pin LOW and HIGH to shift next bit
-    digitalWrite(CLOCK, LOW);
-    delayMicroseconds(1);
+
+    // Pulse clock pin high and low to shift next bit
     digitalWrite(CLOCK, HIGH);
-    
+    digitalWrite(CLOCK, LOW);
+
   }
 
   // Set latch pin low to release data
-  digitalWrite(LATCH_INPUT, HIGH);
+  digitalWrite(LATCH_INPUT, LOW);
 
   return data;
 }
 void loop() {
-  while (true) {
-    //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
-    digitalWrite(OUTPUT_ENABLE, HIGH);
-    /*
-      if (counter == 250)
-      counter = 0;
-      else
-      counter += 1;
-      setOutputValues(counter);
-    */
+  //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
+  digitalWrite(OUTPUT_ENABLE, HIGH);
+  /*
+    if (counter == 250)
+    counter = 0;
+    else
+    counter += 1;
+    setOutputValues(counter);
+  */
 
-    byte value = readFromInput();
-    setOutputValues(value);
+  byte value = readInput();
+  /*
+    digitalWrite(LATCH_INPUT, LOW);
+    delayMicroseconds(20);
+    byte value = shiftIn(DATA_IN, CLOCK, LSBFIRST);
+    digitalWrite(LATCH_INPUT, HIGH);
+  */
+  if (value != outputValues[5]) {
+    Serial.print("Old value: ");
+    Serial.print(outputValues[5]);
+    Serial.print(" New value: ");
+    Serial.println(value);
+  }
+  setOutputValues(value);
 
-    long start = millis();
-    while (millis() - start < 250) {
-      for (int i = 0; i < 6; i ++) {
-        digitalWrite(LATCH_DRAIN, LOW);
-        //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-        //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+  long start = millis();
+  while (millis() - start < 1000) {
+    for (int i = 0; i < 6; i ++) {
+      digitalWrite(LATCH_DRAIN, LOW);
+      //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
-        customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
-        //shiftOut(DATA_OUT, CLOCK, LSBFIRST, 0x00);
-        //Disable old output before shifting new display value:
-        digitalWrite(OUTPUT_ENABLE, HIGH);
-        digitalWrite(LATCH_DRAIN, HIGH);
+      //Disable old output before shifting new display value:
+      digitalWrite(OUTPUT_ENABLE, HIGH);
+      digitalWrite(LATCH_DRAIN, HIGH);
+      //delayMicroseconds(50);
 
-        // Select the correct display before re-enabling the display:
-        digitalWrite(LATCH_TRANS, LOW);
-        //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
-        shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+      // Select the correct display before re-enabling the display:
+      digitalWrite(LATCH_TRANS, LOW);
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
-        //Shift the address and enable the output.
-        digitalWrite(LATCH_TRANS, HIGH);
-        digitalWrite(OUTPUT_ENABLE, LOW);
-        digitalWrite(CLOCK, HIGH);
-        digitalWrite(DATA_OUT, HIGH);
-        //delayMicroseconds(50);//Okay, sligtly flickery
-        delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
-      }
+      //Shift the address and enable the output.
+      digitalWrite(LATCH_TRANS, HIGH);
+      digitalWrite(OUTPUT_ENABLE, LOW);
+      digitalWrite(CLOCK, HIGH);
+      digitalWrite(DATA_OUT, HIGH);
+      //delayMicroseconds(50);//Okay, sligtly flickery
+      delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
   }
 }
