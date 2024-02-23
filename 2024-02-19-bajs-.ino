@@ -272,20 +272,22 @@ void loop() {
     Serial.println(value);
   }
   setOutputValues(value);
-
+  bool isFirstExec = true;
   long start = millis();
-  //while (millis() - start < 1000) {
-  while (millis() - start < 100000) {
+  while (millis() - start < 5000) {
+    //while (millis() - start < 100000) {
     for (int i = 0; i < 6; i ++) {
-      Serial.println("_______________");
-      Serial.print("Loop: ");
-      Serial.println(i);
-      Serial.println();
-      Serial.print("Will print to drain: ");
-      if (i == 5)
-        Serial.println(outputValues[i]);
-      else
-        Serial.println(outputChars[i]);
+      if (isFirstExec) {
+        Serial.println("_______________");
+        Serial.print("Loop: ");
+        Serial.println(i);
+        Serial.println();
+        Serial.print("Will print to drain: ");
+        if (i == 5)
+          Serial.println(outputValues[i]);
+        else
+          Serial.println(outputChars[i]);
+      }
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
       //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
@@ -295,16 +297,15 @@ void loop() {
       digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
       //delayMicroseconds(50);
-
-      Serial.print("Will print to TRANS: ");
-      //Serial.println(outputs[i]);
-      printByte(outputs[i]);
-      Serial.println();
-
+      if (isFirstExec) {
+        Serial.print("Will print to TRANS: ");
+        //Serial.println(outputs[i]);
+        printByte(outputs[i]);
+        Serial.println();
+      }
       // Select the correct display before re-enabling the display:
       digitalWrite(LATCH_TRANS, LOW);
-      //delay(1);
-      delayMicroseconds(50);
+      delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
@@ -314,7 +315,9 @@ void loop() {
       digitalWrite(CLOCK, HIGH);
       digitalWrite(DATA_OUT, HIGH);
       //delayMicroseconds(50);//Okay, sligtly flickery
-      delay(5000);
+      //delay(5000);
+      delay(5);
+      isFirstExec = false;
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
   }
