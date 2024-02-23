@@ -13,6 +13,7 @@
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
 
+volatile byte value = 0xF1;
 volatile long lastDebounceTime = 0;
 volatile byte counter = 0;
 const byte outputs[6]  =
@@ -59,8 +60,9 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
       digitalWrite(dataPin, !!(val & (1 << i)));
     else
       digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-    digitalWrite(clockPin, HIGH);
+    delayMicroseconds(1);
 
+    digitalWrite(clockPin, HIGH);
     digitalWrite(clockPin, LOW);
     //digitalWrite(dataPin, LOW);
     delayMicroseconds(1);
@@ -100,7 +102,7 @@ bool isHexDigit(char c) {
   return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
 }
 
-void readSerial() {
+byte readSerial() {
 
   byte b = 0;
   String temp = "";
@@ -125,6 +127,7 @@ void readSerial() {
   Serial.print("C magic: (god bless gemini and google): ");
   byte hexRep = hexCharToByte(charArray[0], charArray[1]);
   Serial.println(hexRep);
+  return hexRep;
 }
 
 byte charToByte(char ch) {
@@ -263,8 +266,8 @@ void loop() {
     setOutputValues(counter);
   */
 
-  //byte value = readInput();
-  byte value = 0xF1;
+
+
 
   /*
     digitalWrite(LATCH_INPUT, LOW);
@@ -272,17 +275,20 @@ void loop() {
     byte value = shiftIn(DATA_IN, CLOCK, LSBFIRST);
     digitalWrite(LATCH_INPUT, HIGH);
   */
+  if (Serial.available())
+    value = readSerial();
+
   if (value != outputValues[5]) {
     Serial.print("Old value: ");
     Serial.print(outputValues[5]);
     Serial.print(" New value: ");
     Serial.println(value);
+    setOutputValues(value);
   }
-  setOutputValues(value);
-  bool isFirstExec = true;
+  bool isFirstExec = false;
   long start = millis();
-  //while (millis() - start < 5000) {
-    while (millis() - start < 100000) {
+  while (millis() - start < 500) {
+    //while (millis() - start < 100000) {
     for (int i = 0; i < 6; i ++) {
       if (isFirstExec) {
         Serial.println("_______________");
@@ -295,6 +301,7 @@ void loop() {
         else
           Serial.println(outputChars[i]);
       }
+
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
       //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
@@ -303,31 +310,33 @@ void loop() {
       //Disable old output before shifting new display value:
       digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
-      //delayMicroseconds(50);
+      delayMicroseconds(5);
       if (isFirstExec) {
         Serial.print("Will print to TRANS: ");
         //Serial.println(outputs[i]);
         printByte(outputs[i]);
         Serial.println();
       }
+
       // Select the correct display before re-enabling the display:
-      digitalWrite(CLOCK,HIGH);
+      digitalWrite(CLOCK, HIGH);
       digitalWrite(LATCH_TRANS, LOW);
-      delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
-      //delay(50);
-      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
+      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
-      digitalWrite(OUTPUT_ENABLE, LOW);
+      digitalWrite(OUTPUT_ENABLE, LOW);//TODO ENABLE AGAIN!
+
       digitalWrite(CLOCK, HIGH);
       digitalWrite(DATA_OUT, HIGH);
+
+      delayMicroseconds(100);//TODO REMOVE
       //delayMicroseconds(50);//Okay, sligtly flickery
-      delay(5000);
+      //delay(2000);
       //delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
-    //isFirstExec = false;
+    isFirstExec = false;
   }
 }
