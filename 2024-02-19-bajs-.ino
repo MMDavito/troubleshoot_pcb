@@ -297,7 +297,7 @@ void loop() {
       }
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
       customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
       //Disable old output before shifting new display value:
