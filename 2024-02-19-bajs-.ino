@@ -303,7 +303,8 @@ void loop() {
 
       // Select the correct display before re-enabling the display:
       digitalWrite(LATCH_TRANS, LOW);
-      delay(1);
+      //delay(1);
+      delayMicroseconds(50);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
