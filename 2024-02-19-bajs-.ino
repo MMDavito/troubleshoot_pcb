@@ -182,11 +182,18 @@ void setup() {
   pinMode(LATCH_INPUT, OUTPUT);
   pinMode(DATA_OUT, OUTPUT);
 
+  pinMode(DATA_IN, INPUT);
   digitalWrite(OUTPUT_ENABLE, HIGH);
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
-  digitalWrite(LATCH_INPUT, LOW);
 
+  digitalWrite(DATA_IN, LOW);
+  /*
+     Sligtly more noisy with 165 attatched than without.
+     But is probably only possible to remidy by clock inhabit?
+  */
+  digitalWrite(LATCH_INPUT, LOW);//Sligtly more noisy with it attatched than without.
+  //digitalWrite(LATCH_INPUT, HIGH);//MUCH MORE NOICY THAN WHEN LOW!
   digitalWrite(CLOCK, HIGH);
 }
 /**
@@ -316,7 +323,7 @@ void loop() {
       digitalWrite(DATA_OUT, HIGH);
       //delayMicroseconds(50);//Okay, sligtly flickery
       //delay(5000);
-      delay(1);
+      delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
     isFirstExec = false;
