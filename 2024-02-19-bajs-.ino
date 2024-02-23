@@ -313,8 +313,8 @@ void loop() {
       // Select the correct display before re-enabling the display:
       digitalWrite(CLOCK,HIGH);
       digitalWrite(LATCH_TRANS, LOW);
-      //delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
-      delay(50);
+      delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
+      //delay(50);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
