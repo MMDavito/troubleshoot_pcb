@@ -62,9 +62,10 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
     digitalWrite(clockPin, HIGH);
 
     digitalWrite(clockPin, LOW);
-    digitalWrite(dataPin, LOW);
+    //digitalWrite(dataPin, LOW);
     delayMicroseconds(1);
   }
+  //digitalWrite(clockPin, HIGH);
 }
 
 byte hexCharToByte(char hexChar1, char hexChar2) {
@@ -195,22 +196,22 @@ const int debounceTime = 50; // Debounce delay in milliseconds
 byte readInput() {
   digitalWrite(LATCH_INPUT, LOW);
   delay(500);
-  
+
   // Set latch pin high to hold data
   digitalWrite(LATCH_INPUT, HIGH);
 
   // Debounce latch pin
   /*
-  lastDebounceTime = millis();
-  while (digitalRead(LATCH_INPUT) == LOW) {
+    lastDebounceTime = millis();
+    while (digitalRead(LATCH_INPUT) == LOW) {
     if (millis() - lastDebounceTime > debounceTime) {
       break;
     }
-  }
+    }
   */
 
   // Set clock pin low to start shifting
-  
+
 
   // Shift in 8 bits (one byte)
   byte data = 0;
@@ -237,6 +238,13 @@ byte readInput() {
 
   return data;
 }
+void printByte(byte val) {
+  for (int i = 7; i >= 0; i--)
+  {
+    bool b = bitRead(val, i);
+    Serial.print(b);
+  }
+}
 void loop() {
   //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
   digitalWrite(OUTPUT_ENABLE, HIGH);
@@ -248,7 +256,9 @@ void loop() {
     setOutputValues(counter);
   */
 
-  byte value = readInput();
+  //byte value = readInput();
+  byte value = 0xF1;
+
   /*
     digitalWrite(LATCH_INPUT, LOW);
     delayMicroseconds(20);
@@ -264,20 +274,36 @@ void loop() {
   setOutputValues(value);
 
   long start = millis();
-  while (millis() - start < 1000) {
+  //while (millis() - start < 1000) {
+  while (millis() - start < 100000) {
     for (int i = 0; i < 6; i ++) {
+      Serial.println("_______________");
+      Serial.print("Loop: ");
+      Serial.println(i);
+      Serial.println();
+      Serial.print("Will print to drain: ");
+      if (i == 5)
+        Serial.println(outputValues[i]);
+      else
+        Serial.println(outputChars[i]);
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
-      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
       //Disable old output before shifting new display value:
       digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
       //delayMicroseconds(50);
 
+      Serial.print("Will print to TRANS: ");
+      //Serial.println(outputs[i]);
+      printByte(outputs[i]);
+      Serial.println();
+
       // Select the correct display before re-enabling the display:
       digitalWrite(LATCH_TRANS, LOW);
+      delay(1);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
@@ -287,7 +313,8 @@ void loop() {
       digitalWrite(CLOCK, HIGH);
       digitalWrite(DATA_OUT, HIGH);
       //delayMicroseconds(50);//Okay, sligtly flickery
-      delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
+      delay(5000);
+      //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
   }
 }
