@@ -316,9 +316,9 @@ void loop() {
       digitalWrite(DATA_OUT, HIGH);
       //delayMicroseconds(50);//Okay, sligtly flickery
       //delay(5000);
-      delay(5);
-      isFirstExec = false;
+      delay(1);
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
+    isFirstExec = false;
   }
 }
