@@ -281,8 +281,8 @@ void loop() {
   setOutputValues(value);
   bool isFirstExec = true;
   long start = millis();
-  while (millis() - start < 5000) {
-    //while (millis() - start < 100000) {
+  //while (millis() - start < 5000) {
+    while (millis() - start < 100000) {
     for (int i = 0; i < 6; i ++) {
       if (isFirstExec) {
         Serial.println("_______________");
@@ -311,8 +311,10 @@ void loop() {
         Serial.println();
       }
       // Select the correct display before re-enabling the display:
+      digitalWrite(CLOCK,HIGH);
       digitalWrite(LATCH_TRANS, LOW);
-      delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
+      //delayMicroseconds(50);//1 micro definitaly did not work! (50 worked when switched on for 5k ms)
+      delay(50);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
@@ -322,10 +324,10 @@ void loop() {
       digitalWrite(CLOCK, HIGH);
       digitalWrite(DATA_OUT, HIGH);
       //delayMicroseconds(50);//Okay, sligtly flickery
-      //delay(5000);
-      delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
+      delay(5000);
+      //delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
-    isFirstExec = false;
+    //isFirstExec = false;
   }
 }
