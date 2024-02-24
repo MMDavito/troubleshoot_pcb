@@ -37,15 +37,17 @@ void readSwitches() {
       }
       delay(10);
     }
+    /*
+        //TEMP TROUBLESHOOTING:
 
-    //TEMP TROUBLESHOOTING:
+        delay(1000);
+        Serial.print("Switch: ");
+        Serial.print(i);
+        Serial.print(", was: ");
+        Serial.println(isHigh);
 
-    delay(1000);
-    Serial.print("Switch: ");
-    Serial.print(i);
-    Serial.print(", was: ");
-    Serial.println(isHigh);
 
+    */
   }
   switchValues = temp;
 }

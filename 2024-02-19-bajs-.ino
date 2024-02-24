@@ -310,7 +310,7 @@ void loop() {
       //Disable old output before shifting new display value:
       digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
-      delayMicroseconds(5);
+      //delayMicroseconds(5);
       if (isFirstExec) {
         Serial.print("Will print to TRANS: ");
         //Serial.println(outputs[i]);
@@ -326,15 +326,15 @@ void loop() {
 
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
-      digitalWrite(OUTPUT_ENABLE, LOW);//TODO ENABLE AGAIN!
+      digitalWrite(OUTPUT_ENABLE, LOW);
 
       digitalWrite(CLOCK, HIGH);
       digitalWrite(DATA_OUT, HIGH);
 
-      delayMicroseconds(100);//TODO REMOVE
+      //delayMicroseconds(100);//TODO REMOVE
       //delayMicroseconds(50);//Okay, sligtly flickery
       //delay(2000);
-      //delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
+      delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
     isFirstExec = false;
