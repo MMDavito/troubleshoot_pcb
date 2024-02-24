@@ -76,5 +76,5 @@ void setup() {
 void loop() {
   readSwitches();
   writeToSerial();
-  delay(1000);
+  delay(200);
 }
