@@ -24,8 +24,8 @@
 #define SW_WR 12 //18
 #define SW_SERR 13 //19
 
-volatile byte value = 0xF1;
-volatile long lastDebounceTime = 0;
+volatile bool colorShifted = false;
+volatile byte serialValue = 0xF1;
 volatile byte counter = 0;
 const byte outputs[6]  =
 {
@@ -36,6 +36,9 @@ const byte outputs[6]  =
   0b00001000,
   0b00000100,
 };
+byte channelValues[] = {0b10000000, 0b10000000, 0b10000000, 0b00000000};//RGB; NONE
+byte colorAddresses[] = {1, 2, 3, 4};//Addresses for EEPROM/rgb; NONE
+volatile byte color = 0;//r,g,b,NO color
 volatile char outputChars[6];
 volatile byte outputValues[6];
 const byte customChars[] = {
@@ -58,8 +61,11 @@ const byte customChars[] = {
 };
 CRGB leds[NUM_LEDS];
 bool isBlackout = false;
+volatile unsigned long buttonTime = 0;
 
-void setLedColors() {
+volatile unsigned long lastButtonActive = 0;
+/*
+  void setLedColors() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB(128, 0, 0);
   }
@@ -71,15 +77,40 @@ void setLedColors() {
     leds[3] = CRGB(0, 0, channelValues[2]);
 
     leds[4] = CRGB(channelValues[0], channelValues[1], channelValues[2]);
-  */
-}
 
+  }
+*/
+
+long selectedColor() {
+  switch (color)
+  {
+    case 0:
+      return CRGB::Red;
+    case 1:
+      return CRGB::Green;
+    case 2:
+      return CRGB::Blue;
+    case 3:
+      return CRGB::Black;
+  }
+}
+void setLedColors() {
+  leds[0] = selectedColor();
+  leds[1] = CRGB(channelValues[0], 0, 0);
+  leds[2] = CRGB(0, channelValues[1], 0);
+  leds[3] = CRGB(0, 0, channelValues[2]);
+
+  leds[4] = CRGB(channelValues[0], channelValues[1], channelValues[2]);
+  FastLED.show();
+}
 void blackout() {
   while (digitalRead(SW_MEM) == HIGH) {
     if (isBlackout == false) {
-      setLedColors();
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB(channelValues[0], channelValues[1], channelValues[2]);
+      }
+      FastLED.show();
       isBlackout = true;
-
     }
     delay(100);
   }
@@ -214,6 +245,22 @@ void setOutputValues(byte value) {
   outputValues[5] = value;
 
 }
+void buttonHigh() {
+  if (buttonTime == 0) {
+    buttonTime = millis();
+
+  }
+  else if (buttonTime - lastButtonActive > 250 && colorShifted == false)
+  {
+    if (color == 3) {
+      color = 0;
+    } else {
+      color += 1;
+    }
+    colorShifted = true;
+  }
+}
+
 
 void setup() {
   Serial.begin(9600);
@@ -273,7 +320,6 @@ byte readInput() {
   byte data = 0;
   for (int i = 0; i < 8; i++) {
     // Read data bit with debounce
-    lastDebounceTime = millis();
     /*
       while (digitalRead(DATA_IN) == LOW) {
       if (millis() - lastDebounceTime > debounceTime) {
@@ -286,6 +332,20 @@ byte readInput() {
     // Pulse clock pin high and low to shift next bit
     digitalWrite(CLOCK, HIGH);
     digitalWrite(CLOCK, LOW);
+    //Initilize EEPROM if not initilized, else read from EEPROM
+    byte initilized = EEPROM.read(0);
+    if (initilized > 0) {
+      EEPROM.write(0, 0);
+      for (int i = 0; i < 4; i++) {
+        EEPROM.write(colorAddresses[i], channelValues[i]);
+      }
+    }
+    else {
+      for (int i = 0; i < 4; i++) {
+        channelValues[i] = EEPROM.read(colorAddresses[i]);
+      }
+    }
+
 
   }
 
@@ -302,6 +362,7 @@ void printByte(byte val) {
   }
 }
 void loop() {
+
   //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
   digitalWrite(OUTPUT_ENABLE, HIGH);
   /*
@@ -311,26 +372,44 @@ void loop() {
     counter += 1;
     setOutputValues(counter);
   */
-
-
-
-
+  if (digitalRead(BUTTON) == HIGH) {
+    buttonHigh();
+  }
+  else if (buttonTime != 0) {
+    lastButtonActive = buttonTime;
+    buttonTime = 0;
+    colorShifted = false;
+  }
   /*
     digitalWrite(LATCH_INPUT, LOW);
     delayMicroseconds(20);
     byte value = shiftIn(DATA_IN, CLOCK, LSBFIRST);
     digitalWrite(LATCH_INPUT, HIGH);
   */
-  if (Serial.available())
-    value = readSerial();
-
-  if (value != outputValues[5]) {
+  if (Serial.available()) {
+    serialValue = readSerial();
+  }
+  if (digitalRead(SW_WR) == HIGH && serialValue != channelValues[color]) {
+    channelValues[color] = serialValue;
+    EEPROM.put(colorAddresses[color], serialValue);
+  }
+  if (digitalRead(SW_MEM) == LOW)
+  {
+    Serial.println("\nFrom memory:");
     Serial.print("Old value: ");
     Serial.print(outputValues[5]);
     Serial.print(" New value: ");
-    Serial.println(value);
-    setOutputValues(value);
+    Serial.println(serialValue);
+    setOutputValues(serialValue);
+  } else {
+    Serial.println("\nFrom Switches:");
+    Serial.print("Old value: ");
+    Serial.print(outputValues[5]);
+    Serial.print(" New value: ");
+    Serial.println(channelValues[color]);
+    setOutputValues(channelValues[color]);
   }
+  setLedColors();
   bool isFirstExec = false;
   long start = millis();
   while (millis() - start < 500) {
