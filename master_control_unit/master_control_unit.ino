@@ -4,6 +4,11 @@
   In same moment I realize, no I would have needed 1 shift reg per output?
   Afternoon 2024-02-22 David started becomeing delusional of overwork....
 */
+#include <EEPROM.h>
+#include <FastLED.h>
+
+#define NUM_LEDS 5
+
 #define OUTPUT_ENABLE 2 //4
 #define LATCH_DRAIN 8 //14
 #define LATCH_TRANS 9 //15
@@ -12,6 +17,12 @@
 #define CLOCK 6 //12
 #define DATA_OUT 4 // 6
 #define DATA_IN 5 // 11
+#define RGB_PIN 10 //16
+
+#define BUTTON 3 //5
+#define SW_MEM 11 //17
+#define SW_WR 12 //18
+#define SW_SERR 13 //19
 
 volatile byte value = 0xF1;
 volatile long lastDebounceTime = 0;
@@ -45,8 +56,36 @@ const byte customChars[] = {
   B10011110, // e
   B10001110  // f
 };
+CRGB leds[NUM_LEDS];
+bool isBlackout = false;
 
+void setLedColors() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB(128, 0, 0);
+  }
+  FastLED.show();
+  /*
+    leds[0] = selectedColor();
+    leds[1] = CRGB(channelValues[0], 0, 0);
+    leds[2] = CRGB(0, channelValues[1], 0);
+    leds[3] = CRGB(0, 0, channelValues[2]);
 
+    leds[4] = CRGB(channelValues[0], channelValues[1], channelValues[2]);
+  */
+}
+
+void blackout() {
+  while (digitalRead(SW_MEM) == HIGH) {
+    if (isBlackout == false) {
+      setLedColors();
+      isBlackout = true;
+
+    }
+    delay(100);
+  }
+  isBlackout = false;
+  return;
+}
 
 
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
@@ -198,6 +237,13 @@ void setup() {
   digitalWrite(LATCH_INPUT, LOW);//Sligtly more noisy with it attatched than without.
   //digitalWrite(LATCH_INPUT, HIGH);//MUCH MORE NOICY THAN WHEN LOW!
   digitalWrite(CLOCK, HIGH);
+  pinMode(BUTTON, INPUT);
+  pinMode(SW_WR, INPUT);
+  pinMode(SW_MEM, INPUT);
+  pinMode(SW_SERR, INPUT);
+
+  FastLED.addLeds<WS2812B, RGB_PIN, GRB>(leds, NUM_LEDS);  // GRB ordering is typical
+
 }
 /**
    readFrom74HC165WithDebounce
@@ -338,5 +384,10 @@ void loop() {
       //delayMicroseconds(500);//Ok, still flickery, but will need to confirm brightness once I have two versions next to eachother.
     }
     isFirstExec = false;
+  }
+  if (digitalRead(SW_SERR) == HIGH) {
+    digitalWrite(OUTPUT_ENABLE, HIGH);
+    blackout();
+    digitalWrite(OUTPUT_ENABLE, LOW);
   }
 }
