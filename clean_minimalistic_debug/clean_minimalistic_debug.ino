@@ -219,43 +219,27 @@ void printByte(byte val) {
 }
 void loop() {
 
-  while (true) {
-    for (int i = 0; i < 6; i ++) {
-      digitalWrite(LATCH_DRAIN, LOW);
-      //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
-      digitalWrite(LATCH_DRAIN, HIGH);
-      
-      
-      digitalWrite(LATCH_TRANS, LOW);
+  //while (true) {
+  for (int i = 3; i < 6; i ++) {
+    digitalWrite(LATCH_DRAIN, LOW);
+    customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+    digitalWrite(LATCH_DRAIN, HIGH);
+    //delay(1);
+    
+    digitalWrite(LATCH_TRANS, LOW);
 
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
-      //Shift the address and enable the output.
-      digitalWrite(LATCH_TRANS, HIGH);
-      digitalWrite(OUTPUT_ENABLE, LOW);
+    shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+    //Shift the address and enable the output.
+    digitalWrite(LATCH_TRANS, HIGH);
+    digitalWrite(OUTPUT_ENABLE, LOW);
 
-      digitalWrite(CLOCK, HIGH);
-      digitalWrite(DATA_OUT, HIGH);
+    digitalWrite(CLOCK, HIGH);
+    digitalWrite(DATA_OUT, HIGH);
 
-      //delayMicroseconds(50);
-      //delay(2000);
-      //delay(3000);
-      delay(1);
-      //delay(100);//VERRY STABLE WHEN LATCH_INPUT is low
-      digitalWrite(OUTPUT_ENABLE, HIGH);
-      /*
-            digitalWrite(LATCH_DRAIN, LOW);
-            customShiftOut(DATA_OUT, CLOCK, LSBFIRST, 0x00);
-            digitalWrite(LATCH_DRAIN, HIGH);
-            //delayMicroseconds(5);
-
-            // Select the correct display before re-enabling the display:
-            digitalWrite(CLOCK, HIGH);
-            digitalWrite(DATA_OUT, HIGH);
-
-            delayMicroseconds(100);
-      */
-    }
+    delayMicroseconds(500);
+    //digitalWrite(OUTPUT_ENABLE, HIGH);
+    //delayMicroseconds(500);
+    //delay(1);
+    //}
   }
 }
