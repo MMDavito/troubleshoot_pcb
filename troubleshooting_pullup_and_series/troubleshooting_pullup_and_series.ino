@@ -56,7 +56,7 @@ const byte customChars[] = {
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
   digitalWrite(clockPin, LOW);
-  delayMicroseconds(50);
+  //delayMicroseconds(50);
   //delay(500);
   int i;
 
@@ -65,12 +65,12 @@ void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte va
       digitalWrite(dataPin, !!(val & (1 << i)));
     else
       digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-    delayMicroseconds(20);
+    //delayMicroseconds(20);
     digitalWrite(clockPin, HIGH);
-    delayMicroseconds(50);
+    //delayMicroseconds(50);
     digitalWrite(clockPin, LOW);
     //digitalWrite(dataPin, LOW);
-    //delayMicroseconds(1);
+    delayMicroseconds(1);
     //delay(500);
   }
   //digitalWrite(clockPin, HIGH);
@@ -223,20 +223,24 @@ void loop() {
     byte value = shiftIn(DATA_IN, CLOCK, LSBFIRST);
     digitalWrite(LATCH_INPUT, HIGH);
   */
-  if (Serial.available())
-    value = readSerial();
 
-  if (value != outputValues[5]) {
-    Serial.print("Old value: ");
-    Serial.print(outputValues[5]);
-    Serial.print(" New value: ");
-    Serial.println(value);
-    setOutputValues(value);
-  }
   bool isFirstExec = true;
   long start = millis();
   //while (millis() - start < 500) {
   while (millis() - start < 100000) {
+
+    if (Serial.available())
+      value = readSerial();
+
+    if (value != outputValues[5]) {
+      Serial.print("Old value: ");
+      Serial.print(outputValues[5]);
+      Serial.print(" New value: ");
+      Serial.println(value);
+      setOutputValues(value);
+      isFirstExec = true;
+    }
+
     for (int i = 0; i < 6; i ++) {
       if (isFirstExec) {
         Serial.println("_______________");
@@ -244,16 +248,20 @@ void loop() {
         Serial.println(i);
         Serial.println();
         Serial.print("Will print to drain: ");
-        if (i == 5)
+        /*
+          if (i == 5)
           Serial.println(outputValues[i]);
-        else
+          else
           Serial.println(outputChars[i]);
+        */
+        printByte(outputValues[i]);
+        Serial.println("\n");
       }
 
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
       //Disable old output before shifting new display value:
       digitalWrite(OUTPUT_ENABLE, HIGH);
@@ -261,17 +269,18 @@ void loop() {
       //delayMicroseconds(5);
       if (isFirstExec) {
         Serial.print("Will print to TRANS: ");
+        
         //Serial.println(outputs[i]);
-        printByte(outputs[i]);
+          printByte(outputs[i]);
         Serial.println();
       }
 
       // Select the correct display before re-enabling the display:
-      //digitalWrite(CLOCK, HIGH);
+      digitalWrite(CLOCK, HIGH);
       digitalWrite(LATCH_TRANS, LOW);
-      delayMicroseconds(5);
-      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
-      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+      //delayMicroseconds(5);
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
@@ -283,9 +292,9 @@ void loop() {
 
       //delayMicroseconds(50);
       //delay(2000);
-      delay(500);//VERRY STABLE WHEN LATCH_INPUT is low
+      delay(3000);//VERRY STABLE WHEN LATCH_INPUT is low
 
     }
-    isFirstExec = false;
+    //isFirstExec = false;
   }
 }
