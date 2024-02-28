@@ -230,7 +230,7 @@ void loop() {
       //digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
       //delayMicroseconds(5);
-      delay(10);
+      //delay(10);
       //digitalWrite(CLOCK, HIGH);
       //digitalWrite(DATA_OUT, HIGH);
 
@@ -247,7 +247,7 @@ void loop() {
 
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
-      delay(10);
+      //delay(10);
       digitalWrite(OUTPUT_ENABLE, LOW);
 
       digitalWrite(CLOCK, HIGH);
