@@ -225,29 +225,14 @@ void loop() {
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
       //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
       customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
-
-      //Disable old output before shifting new display value:
-      //digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
-      //delayMicroseconds(5);
-      //delay(10);
-      //digitalWrite(CLOCK, HIGH);
-      //digitalWrite(DATA_OUT, HIGH);
-
-      // Select the correct display before re-enabling the display:
-      /*
-        digitalWrite(CLOCK, HIGH);
-        digitalWrite(DATA_OUT, HIGH);
-      */
+      
+      
       digitalWrite(LATCH_TRANS, LOW);
-      //delayMicroseconds(5);
-      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
 
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
-
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
-      //delay(10);
       digitalWrite(OUTPUT_ENABLE, LOW);
 
       digitalWrite(CLOCK, HIGH);
@@ -256,8 +241,8 @@ void loop() {
       //delayMicroseconds(50);
       //delay(2000);
       //delay(3000);
-      //delay(1);
-      delay(500);//VERRY STABLE WHEN LATCH_INPUT is low
+      delay(1);
+      //delay(100);//VERRY STABLE WHEN LATCH_INPUT is low
       digitalWrite(OUTPUT_ENABLE, HIGH);
       /*
             digitalWrite(LATCH_DRAIN, LOW);
