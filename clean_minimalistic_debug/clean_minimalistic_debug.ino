@@ -1,3 +1,5 @@
+#include <SPI.h>
+
 /*If I put this to two, maybe I could actually scrap update of the OUTPUT_TRANS.
   But would probably need to hotwire serial...
 
@@ -30,7 +32,19 @@ const byte outputs[6]  =
   0b00000100,
 };
 volatile char outputChars[6];
-volatile byte outputValues[6];
+volatile byte outputValues[6] = {
+  0b11000000,
+  0b01000000,
+  0b00100000,
+  0b00010000,
+  0b00001000,
+  0b00000101,
+};
+
+
+
+
+
 const byte customChars[] = {
   B11111100, // 0
   B01100000, // 1
@@ -56,7 +70,7 @@ const byte customChars[] = {
 void customShiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, byte val)
 {
   digitalWrite(clockPin, LOW);
-  //delayMicroseconds(50);
+  delayMicroseconds(1);
   //delay(500);
   int i;
 
@@ -189,7 +203,7 @@ void setup() {
   pinMode(LATCH_DRAIN, OUTPUT);
   pinMode(LATCH_TRANS, OUTPUT);
 
-  digitalWrite(OUTPUT_ENABLE, HIGH);
+  digitalWrite(OUTPUT_ENABLE, LOW);
   digitalWrite(LATCH_DRAIN, HIGH);
   digitalWrite(LATCH_TRANS, HIGH);
 
@@ -204,101 +218,59 @@ void printByte(byte val) {
   }
 }
 void loop() {
-  //disable output before reading from 165/input, otherwise last (which is LEDS, so it's fine?) will be/apear brighter/flashing (last dutycycle would be slightly longer).
-  digitalWrite(OUTPUT_ENABLE, HIGH);
-  /*
-    if (counter == 250)
-    counter = 0;
-    else
-    counter += 1;
-    setOutputValues(counter);
-  */
 
-
-
-
-  /*
-    digitalWrite(LATCH_INPUT, LOW);
-    delayMicroseconds(20);
-    byte value = shiftIn(DATA_IN, CLOCK, LSBFIRST);
-    digitalWrite(LATCH_INPUT, HIGH);
-  */
-
-  bool isFirstExec = true;
-  long start = millis();
-  //while (millis() - start < 500) {
-  while (millis() - start < 100000) {
-
-    if (Serial.available())
-      value = readSerial();
-
-    if (value != outputValues[5]) {
-      Serial.print("Old value: ");
-      Serial.print(outputValues[5]);
-      Serial.print(" New value: ");
-      Serial.println(value);
-      setOutputValues(value);
-      isFirstExec = true;
-    }
-
+  while (true) {
     for (int i = 0; i < 6; i ++) {
-      if (isFirstExec) {
-        Serial.println("_______________");
-        Serial.print("Loop: ");
-        Serial.println(i);
-        Serial.println();
-        Serial.print("Will print to drain: ");
-        /*
-          if (i == 5)
-          Serial.println(outputValues[i]);
-          else
-          Serial.println(outputChars[i]);
-        */
-        printByte(outputValues[i]);
-        Serial.println("\n");
-      }
-
       digitalWrite(LATCH_DRAIN, LOW);
       //default shift Leads to more flickering (especially of DP of decimal_1 (maybe less flickery except the dp?))
-      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
-      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      //shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);//THIS DOES NOT WORK AT ALL FOR THE LEDS!
+      customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
 
       //Disable old output before shifting new display value:
-      digitalWrite(OUTPUT_ENABLE, HIGH);
+      //digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(LATCH_DRAIN, HIGH);
       //delayMicroseconds(5);
-      if (isFirstExec) {
-        Serial.print("Will print to TRANS: ");
-        
-        //Serial.println(outputs[i]);
-          printByte(outputs[i]);
-        Serial.println();
-      }
+      delay(10);
+      //digitalWrite(CLOCK, HIGH);
+      //digitalWrite(DATA_OUT, HIGH);
 
       // Select the correct display before re-enabling the display:
-      digitalWrite(CLOCK, HIGH);
+      /*
+        digitalWrite(CLOCK, HIGH);
+        digitalWrite(DATA_OUT, HIGH);
+      */
       digitalWrite(LATCH_TRANS, LOW);
       //delayMicroseconds(5);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//This does not work atall!!!!
+
       shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
 
       //Shift the address and enable the output.
       digitalWrite(LATCH_TRANS, HIGH);
+      delay(10);
       digitalWrite(OUTPUT_ENABLE, LOW);
 
-      //digitalWrite(CLOCK, HIGH);
-      //digitalWrite(DATA_OUT, HIGH);
-
+      digitalWrite(CLOCK, HIGH);
+      digitalWrite(DATA_OUT, HIGH);
 
       //delayMicroseconds(50);
       //delay(2000);
       //delay(3000);
-      delay(500);
-      
-      //delay(1);//VERRY STABLE WHEN LATCH_INPUT is low
-      
+      //delay(1);
+      delay(500);//VERRY STABLE WHEN LATCH_INPUT is low
+      digitalWrite(OUTPUT_ENABLE, HIGH);
+      /*
+            digitalWrite(LATCH_DRAIN, LOW);
+            customShiftOut(DATA_OUT, CLOCK, LSBFIRST, 0x00);
+            digitalWrite(LATCH_DRAIN, HIGH);
+            //delayMicroseconds(5);
 
+            // Select the correct display before re-enabling the display:
+            digitalWrite(CLOCK, HIGH);
+            digitalWrite(DATA_OUT, HIGH);
+
+            delayMicroseconds(100);
+      */
     }
-    isFirstExec = false;
   }
 }
