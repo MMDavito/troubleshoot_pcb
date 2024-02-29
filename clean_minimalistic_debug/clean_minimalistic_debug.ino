@@ -218,28 +218,37 @@ void printByte(byte val) {
   }
 }
 void loop() {
+  long start = millis();
+  if (counter == 255)
+    counter = 0;
+  else
+    counter ++;
+  while (millis() - start < 500) {
+    for (int i = 0; i < 6; i ++) {
+      digitalWrite(LATCH_DRAIN, LOW);
+      //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      if (i == 5)
+        shiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+      else
+        shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
+      digitalWrite(LATCH_DRAIN, HIGH);
+      //delay(1);
 
-  //while (true) {
-  for (int i = 3; i < 6; i ++) {
-    digitalWrite(LATCH_DRAIN, LOW);
-    customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
-    digitalWrite(LATCH_DRAIN, HIGH);
-    //delay(1);
-    
-    digitalWrite(LATCH_TRANS, LOW);
+      digitalWrite(LATCH_TRANS, LOW);
 
-    shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
-    //Shift the address and enable the output.
-    digitalWrite(LATCH_TRANS, HIGH);
-    digitalWrite(OUTPUT_ENABLE, LOW);
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputs[i]);//Much more stable than alternative!
+      //Shift the address and enable the output.
+      digitalWrite(LATCH_TRANS, HIGH);
+      digitalWrite(OUTPUT_ENABLE, LOW);
+      //delayMicroseconds(10);
+      //digitalWrite(CLOCK, HIGH);
+      //digitalWrite(DATA_OUT, HIGH);
 
-    digitalWrite(CLOCK, HIGH);
-    digitalWrite(DATA_OUT, HIGH);
-
-    delayMicroseconds(500);
-    //digitalWrite(OUTPUT_ENABLE, HIGH);
-    //delayMicroseconds(500);
-    //delay(1);
-    //}
+      delayMicroseconds(500);
+      digitalWrite(OUTPUT_ENABLE, HIGH);
+      //delayMicroseconds(500);
+      //delay(1);
+      //}
+    }
   }
 }
