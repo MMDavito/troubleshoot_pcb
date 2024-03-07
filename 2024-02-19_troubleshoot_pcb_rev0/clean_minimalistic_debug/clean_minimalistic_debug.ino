@@ -228,10 +228,14 @@ void loop() {
       digitalWrite(LATCH_DRAIN, LOW);
       //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
       if (i == 5)
-        shiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+        //customShiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
+      shiftOut(DATA_OUT, CLOCK, LSBFIRST, counter);
       else
         shiftOut(DATA_OUT, CLOCK, LSBFIRST, outputValues[i]);
       digitalWrite(LATCH_DRAIN, HIGH);
+      
+      //digitalWrite(CLOCK, HIGH);
+      //digitalWrite(DATA_OUT, HIGH);
       //delay(1);
 
       digitalWrite(LATCH_TRANS, LOW);
