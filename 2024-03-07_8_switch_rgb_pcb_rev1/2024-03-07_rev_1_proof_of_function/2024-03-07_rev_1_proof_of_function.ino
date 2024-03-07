@@ -94,7 +94,7 @@ Serial.println('\n');
 
       digitalWrite(RCK_OUTPUT, LOW);
       //delay(50);
-      delayMicroseconds(50);
+      //delayMicroseconds(50);
 
       //digitalWrite(RCK_OUTPUT, LOW);
       //SPI.transfer(combined);
