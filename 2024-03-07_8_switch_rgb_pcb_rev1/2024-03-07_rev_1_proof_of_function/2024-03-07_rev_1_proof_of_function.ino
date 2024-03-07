@@ -9,6 +9,7 @@
 #define OUTPUT_ENABLE 2 //4
 #define RCK_INPUT 7 //13
 #define RCK_OUTPUT 8 //14
+#define RCK_TRANS 9 //15
 
 const byte outputs[6]  =
 {
@@ -42,13 +43,15 @@ void setup() {
   SPI.setBitOrder(LSBFIRST); // MSBFIRST is default - leave out in that case
 
 
-  SPI.setClockDivider(SPI_CLOCK_DIV128); // why so slow?  might as well use shiftout()
+  //SPI.setClockDivider(SPI_CLOCK_DIV128); // why so slow?  might as well use shiftout()
   // HC595 and TPIC6B595 work just fine at default speed (4 MHz)
 
   pinMode(BUTTON, INPUT);
   pinMode(OUTPUT_ENABLE, OUTPUT);
   pinMode(RCK_INPUT, OUTPUT);
   pinMode(RCK_OUTPUT, OUTPUT);
+  pinMode(RCK_TRANS, OUTPUT);
+  
 
   digitalWrite(OUTPUT_ENABLE, HIGH);
   //digitalWrite(RCK_INPUT, HIGH);//RCK_INPUT high IS MORE UNSTABLE.
@@ -56,6 +59,7 @@ void setup() {
   
   digitalWrite(RCK_INPUT, LOW);
   digitalWrite(RCK_OUTPUT, HIGH);
+  digitalWrite(RCK_TRANS, HIGH);
 }
 
 
@@ -92,7 +96,9 @@ Serial.println('\n');
       else
         combined = (outputValues[i] << 8) | (outputs[i]);
 
+      digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(RCK_OUTPUT, LOW);
+      digitalWrite(RCK_TRANS, LOW);
       //delay(50);
       //delayMicroseconds(50);
 
@@ -104,9 +110,12 @@ Serial.println('\n');
       //SPI.transfer(0XF1);
       SPI.transfer(counter);
 
-      digitalWrite(OUTPUT_ENABLE, HIGH);
+      
       digitalWrite(RCK_OUTPUT, HIGH);
+      digitalWrite(RCK_TRANS, HIGH);
       digitalWrite(OUTPUT_ENABLE, LOW);
+      
+      delay(1);
     }
   }
 }
