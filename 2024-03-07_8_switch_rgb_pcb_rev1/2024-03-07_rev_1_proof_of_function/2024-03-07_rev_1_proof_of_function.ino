@@ -51,7 +51,9 @@ void setup() {
   pinMode(RCK_OUTPUT, OUTPUT);
 
   digitalWrite(OUTPUT_ENABLE, HIGH);
-  //digitalWrite(RCK_INPUT, HIGH);
+  //digitalWrite(RCK_INPUT, HIGH);//RCK_INPUT high IS MORE UNSTABLE.
+  //Could test 100k pulldown if high never works, but that is a later issue.
+  
   digitalWrite(RCK_INPUT, LOW);
   digitalWrite(RCK_OUTPUT, HIGH);
 }
@@ -91,7 +93,8 @@ Serial.println('\n');
         combined = (outputValues[i] << 8) | (outputs[i]);
 
       digitalWrite(RCK_OUTPUT, LOW);
-      delay(50);
+      //delay(50);
+      delayMicroseconds(50);
 
       //digitalWrite(RCK_OUTPUT, LOW);
       //SPI.transfer(combined);
