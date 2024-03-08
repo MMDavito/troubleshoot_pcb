@@ -130,7 +130,9 @@ void setOutputValues(byte value) {
 
 void setup() {
   //Serial.begin(9600);
-  Serial.begin(115200);
+  //Serial.begin(115200);//WORKS
+  //Serial.begin(1000000);//Works
+  Serial.begin(2000000);//
   SPI.begin();
 
   //SPI.setDataMode(SPI_MODE0); // default - don't need
@@ -233,4 +235,5 @@ void loop() {
       delay(1);
     }
   }
+  digitalWrite(OUTPUT_ENABLE, HIGH);
 }
