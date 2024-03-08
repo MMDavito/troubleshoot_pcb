@@ -129,7 +129,8 @@ void setOutputValues(byte value) {
 
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
+  Serial.begin(115200);
   SPI.begin();
 
   //SPI.setDataMode(SPI_MODE0); // default - don't need
