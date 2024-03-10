@@ -435,6 +435,7 @@ void counterMode() {
     //updateInterval = 100;
     isBlackout = false;
     isCounter = false;
+    setLedColors();
     return;
   }
   if (digitalRead(BUTTON) == HIGH) {
