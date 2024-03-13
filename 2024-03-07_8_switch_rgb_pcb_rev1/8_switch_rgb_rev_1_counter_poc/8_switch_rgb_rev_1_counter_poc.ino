@@ -52,9 +52,6 @@ volatile char outputChars[6];
 
 volatile int counter = 0x0f;
 
-
-
-
 void printByte(byte val) {
   for (int i = 7; i >= 0; i--)
   {
@@ -110,7 +107,7 @@ void setOutputValues(byte value) {
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(2000000);
   SPI.begin();
 
   //SPI.setDataMode(SPI_MODE0); // default - don't need
@@ -171,26 +168,28 @@ void loop() {
   }
 
   long start = millis();
+  //while (millis() - start < 10) {
   while (millis() - start < 500) {
-    //while (millis() - start < 5000) {
     for (int i = 0; i < 6; i ++) {
       unsigned long combined = 0; // clear it out
       byte temp = 0;
 
       temp = outputValues[i];
 
-      digitalWrite(OUTPUT_ENABLE, HIGH);
+
       digitalWrite(RCK_OUTPUT, LOW);
       digitalWrite(RCK_TRANS, LOW);
 
       SPI.transfer(outputs[i]);
       SPI.transfer(temp);
 
+      digitalWrite(OUTPUT_ENABLE, HIGH);
       digitalWrite(RCK_OUTPUT, HIGH);
       digitalWrite(RCK_TRANS, HIGH);
+
       digitalWrite(OUTPUT_ENABLE, LOW);
 
-      delay(1);
+      delayMicroseconds(100);
     }
   }
 }
